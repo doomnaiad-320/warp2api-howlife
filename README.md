@@ -240,7 +240,7 @@ export LOG_LEVEL="INFO"
    lsof -i:8000  # Protobuf桥接服务
    lsof -i:8010  # OpenAI兼容API
    lsof -i:8019  # 账号池服务
-   lsof -i:8021  # 账号管理器
+   lsof -i:8021  # 账号管理器web
    ```
 2. 查看日志文件了解详细错误
 3. 确保Python依赖已正确安装
@@ -253,7 +253,22 @@ export LOG_LEVEL="INFO"
   curl -X POST http://localhost:8019/api/accounts/replenish \
     -d '{"count": 10}'
   ```
+### SQLlite命令样式
 
+* 添加账号的命令:
+```
+sqlite3 account-pool-service/accounts.db "  
+INSERT INTO accounts (email, local_id, id_token, refresh_token, status, created_at)   
+VALUES   
+  ('account1@example.com', 'firebase_uid_1', 'id_token_1', 'refresh_token_1', 'available', datetime('now')),  
+  ('account2@example.com', 'firebase_uid_2', 'id_token_2', 'refresh_token_2', 'available', datetime('now')),  
+  ('account3@example.com', 'firebase_uid_3', 'id_token_3', 'refresh_token_3', 'available', datetime('now'));  
+"
+```
+
+* 验证账号是否添加成功
+```sqlite3 account-pool-service/accounts.db "SELECT email, status, created_at FROM accounts WHERE email='dd016ea3@frontmi.net';"
+```
 ### Token过期
 - 账号池会自动刷新即将过期的Token
 - 遵守1小时刷新限制，防止账号被封
@@ -281,6 +296,8 @@ export LOG_LEVEL="INFO"
                        │  (端口8019)     │
                        └─────────────────┘
 ```
+
+
 
 ## 📚 相关文档
 

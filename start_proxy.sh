@@ -25,7 +25,7 @@ pip install -r requirements_proxy.txt
 
 # 启动服务器
 echo "🌐 启动代理服务器..."
-echo "📝 请访问: http://localhost:5000/account.html"
+echo "📝 请访问: http://localhost:8021/account.html"
 echo "⏹️  按 Ctrl+C 停止服务器"
 echo ""
 
