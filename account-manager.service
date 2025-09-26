@@ -1,0 +1,30 @@
+[Unit]
+Description=Account Manager Proxy Server
+After=network.target
+
+[Service]
+Type=exec
+User=www-data
+Group=www-data
+WorkingDirectory=/path/to/your/project
+Environment=PATH=/usr/bin:/usr/local/bin
+Environment=PORT=8021
+Environment=HOST=0.0.0.0
+Environment=WORKERS=4
+ExecStart=/usr/bin/python3 proxy_server.py
+ExecReload=/bin/kill -s HUP $MAINPID
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=account-manager
+
+# 安全设置
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/path/to/your/project/logs
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>账号管理器 - SQLite命令生成 [97084a0d-ee65-4ed8-b515-72b9ff8e1120]</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .task-id {
+            text-align: center;
+            color: #666;
+            font-size: 12px;
+            margin-bottom: 20px;
+        }
+        .account-form {
+            border: 1px solid #ddd;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            background-color: #fafafa;
+            position: relative;
+        }
+        .account-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #555;
+        }
+        input[type="text"], input[type="email"], textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+        textarea {
+            height: 80px;
+            resize: vertical;
+            font-family: monospace;
+        }
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+        .btn-primary { background-color: #007bff; color: white; }
+        .btn-success { background-color: #28a745; color: white; }
+        .btn-danger { background-color: #dc3545; color: white; }
+        .btn-secondary { background-color: #6c757d; color: white; }
+        .btn:hover { opacity: 0.9; }
+        .btn:disabled { opacity: 0.6; cursor: not-allowed; }
+        
+        .progress {
+            width: 100%;
+            height: 20px;
+            background-color: #f0f0f0;
+            border-radius: 10px;
+            margin: 20px 0;
+            overflow: hidden;
+        }
+        .progress-bar {
+            height: 100%;
+            background-color: #007bff;
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+        .result-section {
+            margin-top: 30px;
+        }
+        .result-box {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 15px;
+            margin-top: 15px;
+            position: relative;
+        }
+        .result-box pre {
+            margin: 0;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+        }
+        .copy-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+        }
+        .status.success { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .status.error { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .status.info { background-color: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+        
+        .account-status {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: bold;
+        }
+        .account-status.pending { background-color: #fff3cd; color: #856404; }
+        .account-status.processing { background-color: #cce5ff; color: #004085; }
+        .account-status.success { background-color: #d4edda; color: #155724; }
+        .account-status.error { background-color: #f8d7da; color: #721c24; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 账号管理器 - SQLite命令生成</h1>
+        <div class="task-id">任务ID: 97084a0d-ee65-4ed8-b515-72b9ff8e1120</div>
+        
+        <div id="accounts-container">
+            <div class="account-form" data-index="0">
+                <div class="account-header">
+                    <h3>账号 #1</h3>
+                    <span class="account-status pending" id="status_0">待处理</span>
+                </div>
+                <div class="form-group">
+                    <label for="email_0">邮箱地址 (email):</label>
+                    <input type="email" id="email_0" name="email" placeholder="account1@example.com" required>
+                </div>
+                <div class="form-group">
+                    <label for="firebase_uid_0">Firebase UID (local_id):</label>
+                    <input type="text" id="firebase_uid_0" name="firebase_uid" placeholder="MSEX81KTPmYCFkHndC0RE7j8xnU2" required>
+                </div>
+                <div class="form-group">
+                    <label for="refresh_token_0">Refresh Token:</label>
+                    <textarea id="refresh_token_0" name="refresh_token" placeholder="AMf-vBy40B-X0e74OXaCrWc5..." required></textarea>
+                </div>
+                <button type="button" class="btn btn-danger" onclick="removeAccount(0)">删除此账号</button>
+            </div>
+        </div>
+
+        <div style="text-align: center; margin: 20px 0;">
+            <button type="button" class="btn btn-secondary" onclick="addAccount()">➕ 添加账号</button>
+            <button type="button" class="btn btn-success" id="startBtn" onclick="startProcess()">🚀 开始处理</button>
+            <button type="button" class="btn btn-primary" onclick="clearAll()">🗑️ 清空所有</button>
+        </div>
+
+        <div class="progress" id="progressContainer" style="display: none;">
+            <div class="progress-bar" id="progressBar"></div>
+        </div>
+
+        <div id="status"></div>
+
+        <div class="result-section">
+            <h3>📋 生成结果</h3>
+            
+            <div class="result-box">
+                <button class="btn btn-primary copy-btn" onclick="copyToClipboard('sqliteResult')">复制</button>
+                <h4>SQLite 插入命令:</h4>
+                <pre id="sqliteResult">等待处理账号数据...</pre>
+            </div>
+
+            <div class="result-box">
+                <button class="btn btn-primary copy-btn" onclick="copyToClipboard('csvResult')">复制</button>
+                <h4>CSV 格式数据:</h4>
+                <pre id="csvResult">等待处理账号数据...</pre>
+            </div>
+
+            <div class="result-box">
+                <button class="btn btn-primary copy-btn" onclick="copyToClipboard('csvCommands')">复制</button>
+                <h4>CSV 创建命令:</h4>
+                <pre id="csvCommands">等待处理账号数据...</pre>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let accountCount = 1;
+        let processedAccounts = [];
+
+        function addAccount() {
+            const container = document.getElementById('accounts-container');
+            const newAccountHtml = `
+                <div class="account-form" data-index="${accountCount}">
+                    <div class="account-header">
+                        <h3>账号 #${accountCount + 1}</h3>
+                        <span class="account-status pending" id="status_${accountCount}">待处理</span>
+                    </div>
+                    <div class="form-group">
+                        <label for="email_${accountCount}">邮箱地址 (email):</label>
+                        <input type="email" id="email_${accountCount}" name="email" placeholder="account${accountCount + 1}@example.com" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="firebase_uid_${accountCount}">Firebase UID (local_id):</label>
+                        <input type="text" id="firebase_uid_${accountCount}" name="firebase_uid" placeholder="firebase_uid_${accountCount + 1}" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="refresh_token_${accountCount}">Refresh Token:</label>
+                        <textarea id="refresh_token_${accountCount}" name="refresh_token" placeholder="AMf-vBy40B-X0e74OXaCrWc5..." required></textarea>
+                    </div>
+                    <button type="button" class="btn btn-danger" onclick="removeAccount(${accountCount})">删除此账号</button>
+                </div>
+            `;
+            container.insertAdjacentHTML('beforeend', newAccountHtml);
+            accountCount++;
+        }
+
+        function removeAccount(index) {
+            const accountForm = document.querySelector(`[data-index="${index}"]`);
+            if (accountForm && document.querySelectorAll('.account-form').length > 1) {
+                accountForm.remove();
+            } else {
+                showStatus('至少需要保留一个账号', 'error');
+            }
+        }
+
+        function clearAll() {
+            if (confirm('确定要清空所有账号数据吗？')) {
+                document.querySelectorAll('input, textarea').forEach(input => input.value = '');
+                processedAccounts = [];
+                updateResults();
+                showStatus('已清空所有数据', 'info');
+            }
+        }
+
+        function updateAccountStatus(index, status, message = '') {
+            const statusElement = document.getElementById(`status_${index}`);
+            if (statusElement) {
+                statusElement.className = `account-status ${status}`;
+                statusElement.textContent = message || status;
+            }
+        }
+
+        function showStatus(message, type = 'info') {
+            const statusDiv = document.getElementById('status');
+            statusDiv.innerHTML = `<div class="status ${type}">${message}</div>`;
+        }
+
+        function updateProgress(current, total) {
+            const progressContainer = document.getElementById('progressContainer');
+            const progressBar = document.getElementById('progressBar');
+            
+            if (total > 0) {
+                progressContainer.style.display = 'block';
+                const percentage = (current / total) * 100;
+                progressBar.style.width = percentage + '%';
+            } else {
+                progressContainer.style.display = 'none';
+            }
+        }
+
+        async function getIdTokenFromRefreshToken(refreshToken) {
+            // 检测是否在本地代理服务器环境中
+            const isLocalProxy = window.location.hostname === 'localhost' && window.location.port === '8021';
+
+            let url, requestOptions;
+
+            if (isLocalProxy) {
+                // 使用本地代理服务器
+                url = '/proxy/warp-token';
+                const formData = new URLSearchParams();
+                formData.append('grant_type', 'refresh_token');
+                formData.append('refresh_token', refreshToken);
+
+                requestOptions = {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded'
+                    },
+                    body: formData
+                };
+            } else {
+                // 直接调用 Warp API（可能遇到 CORS 问题）
+                url = 'https://app.warp.dev/proxy/token?key=AIzaSyBdy3O3S9hrdayLJxJ7mriBR4qgUaUygAs';
+                const formData = new URLSearchParams();
+                formData.append('grant_type', 'refresh_token');
+                formData.append('refresh_token', refreshToken);
+
+                requestOptions = {
+                    method: 'POST',
+                    headers: {
+                        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36',
+                        'Content-Type': 'application/x-www-form-urlencoded'
+                    },
+                    body: formData
+                };
+            }
+
+            try {
+                const response = await fetch(url, requestOptions);
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                const data = await response.json();
+
+                // 检查是否有错误信息
+                if (data.error) {
+                    throw new Error(data.error);
+                }
+
+                // 根据你的文档，优先使用 id_token，如果没有则使用 access_token
+                const idToken = data.id_token || data.access_token;
+
+                if (!idToken) {
+                    throw new Error('响应中未找到 id_token 或 access_token');
+                }
+
+                return idToken;
+            } catch (error) {
+                console.error('获取 ID Token 失败:', error);
+
+                // 如果是 CORS 错误，提供解决建议
+                if (error.message.includes('Failed to fetch') || error.message.includes('CORS')) {
+                    throw new Error('CORS 错误：请使用代理服务器运行此页面。运行 python3 proxy_server.py 然后访问 http://localhost:8021/account.html');
+                }
+
+                throw error;
+            }
+        }
+
+        async function startProcess() {
+            const startBtn = document.getElementById('startBtn');
+            startBtn.disabled = true;
+            startBtn.textContent = '处理中...';
+            
+            processedAccounts = [];
+            
+            // 收集所有账号数据
+            const accounts = [];
+            const accountForms = document.querySelectorAll('.account-form');
+            
+            for (let form of accountForms) {
+                const index = form.dataset.index;
+                const email = document.getElementById(`email_${index}`).value.trim();
+                const firebaseUid = document.getElementById(`firebase_uid_${index}`).value.trim();
+                const refreshToken = document.getElementById(`refresh_token_${index}`).value.trim();
+                
+                if (!email || !firebaseUid || !refreshToken) {
+                    showStatus(`账号 #${parseInt(index) + 1} 的信息不完整，请检查所有字段`, 'error');
+                    updateAccountStatus(index, 'error', '信息不完整');
+                    startBtn.disabled = false;
+                    startBtn.textContent = '🚀 开始处理';
+                    return;
+                }
+                
+                accounts.push({ 
+                    email, 
+                    firebaseUid, 
+                    refreshToken, 
+                    index: parseInt(index),
+                    displayIndex: parseInt(index) + 1 
+                });
+                updateAccountStatus(index, 'pending', '等待处理');
+            }
+
+            showStatus(`开始处理 ${accounts.length} 个账号...`, 'info');
+            updateProgress(0, accounts.length);
+
+            // 逐个处理账号
+            for (let i = 0; i < accounts.length; i++) {
+                const account = accounts[i];
+                
+                try {
+                    updateAccountStatus(account.index, 'processing', '获取中...');
+                    showStatus(`正在处理账号 #${account.displayIndex}: ${account.email}`, 'info');
+                    
+                    const idToken = await getIdTokenFromRefreshToken(account.refreshToken);
+                    
+                    // 确保数据对应关系正确
+                    processedAccounts.push({
+                        email: account.email,
+                        local_id: account.firebaseUid,  // Firebase UID 作为 local_id
+                        id_token: idToken,              // 从 API 获取的 id_token
+                        refresh_token: account.refreshToken, // 原始的 refresh_token
+                        status: 'available'
+                    });
+                    
+                    updateAccountStatus(account.index, 'success', '成功');
+                    updateProgress(i + 1, accounts.length);
+                    
+                } catch (error) {
+                    updateAccountStatus(account.index, 'error', '失败');
+                    showStatus(`❌ 账号 #${account.displayIndex} 处理失败: ${error.message}`, 'error');
+                    updateProgress(i + 1, accounts.length);
+                }
+                
+                // 添加延迟避免请求过快
+                if (i < accounts.length - 1) {
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+                }
+            }
+
+            updateResults();
+            
+            startBtn.disabled = false;
+            startBtn.textContent = '🚀 开始处理';
+            showStatus(`✅ 处理完成！成功处理 ${processedAccounts.length}/${accounts.length} 个账号`, 'success');
+        }
+
+        function updateResults() {
+            if (processedAccounts.length === 0) {
+                document.getElementById('sqliteResult').textContent = '没有成功处理的账号数据';
+                document.getElementById('csvResult').textContent = '没有成功处理的账号数据';
+                document.getElementById('csvCommands').textContent = '没有成功处理的账号数据';
+                return;
+            }
+
+            // 生成 SQLite 命令 (按照你的文档格式)
+            let sqliteCommand = `sqlite3 account-pool-service/accounts.db "\nINSERT INTO accounts (email, local_id, id_token, refresh_token, status, created_at)\nVALUES\n`;
+            
+            const values = processedAccounts.map(account => 
+                `  ('${account.email}', '${account.local_id}', '${account.id_token}', '${account.refresh_token}', '${account.status}', datetime('now'))`
+            ).join(',\n');
+            
+            sqliteCommand += values + ';\n"';
+            
+            document.getElementById('sqliteResult').textContent = sqliteCommand;
+
+            // 生成 CSV 格式数据
+            let csvContent = 'email,local_id,id_token,refresh_token,status\n';
+            csvContent += processedAccounts.map(account => 
+                `${account.email},${account.local_id},${account.id_token},${account.refresh_token},${account.status}`
+            ).join('\n');
+            
+            document.getElementById('csvResult').textContent = csvContent;
+
+            // 生成 CSV 创建命令
+            let csvCommands = '# 创建CSV文件头部\necho "email,local_id,id_token,refresh_token,status" > accounts.csv\n\n# 添加账号数据\n';
+            csvCommands += processedAccounts.map(account => 
+                `echo "${account.email},${account.local_id},${account.id_token},${account.refresh_token},${account.status}" >> accounts.csv`
+            ).join('\n');
+            
+            document.getElementById('csvCommands').textContent = csvCommands;
+        }
+
+        function copyToClipboard(elementId) {
+            const element = document.getElementById(elementId);
+            const text = element.textContent;
+            
+            navigator.clipboard.writeText(text).then(() => {
+                showStatus('✅ 已复制到剪贴板', 'success');
+            }).catch(err => {
+                showStatus('❌ 复制失败: ' + err.message, 'error');
+            });
+        }
+
+        // 页面加载完成后的初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            showStatus('请填写账号信息，然后点击"开始处理"按钮', 'info');
+            updateResults();
+        });
+    </script>
+</body>
+</html>
