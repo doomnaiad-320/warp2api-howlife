@@ -138,6 +138,55 @@
         .account-status.processing { background-color: #cce5ff; color: #004085; }
         .account-status.success { background-color: #d4edda; color: #155724; }
         .account-status.error { background-color: #f8d7da; color: #721c24; }
+
+        .json-import-section {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border: 2px dashed #dee2e6;
+            border-radius: 10px;
+            padding: 25px;
+            margin-bottom: 25px;
+            transition: all 0.3s ease;
+        }
+
+        .json-import-section:hover {
+            border-color: #007bff;
+            box-shadow: 0 4px 15px rgba(0,123,255,0.1);
+        }
+
+        .json-import-section h4 {
+            color: #495057;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .json-import-section h4:before {
+            content: "📥";
+            font-size: 1.2em;
+        }
+
+        #jsonInput {
+            background-color: #ffffff;
+            border: 2px solid #e9ecef;
+            border-radius: 6px;
+            transition: border-color 0.3s ease;
+        }
+
+        #jsonInput:focus {
+            border-color: #007bff;
+            box-shadow: 0 0 0 0.2rem rgba(0,123,255,0.25);
+        }
+
+        .json-example {
+            background-color: #f8f9fa;
+            border-left: 4px solid #007bff;
+            padding: 10px 15px;
+            margin: 10px 0;
+            font-family: monospace;
+            font-size: 11px;
+            border-radius: 0 4px 4px 0;
+        }
     </style>
 </head>
 <body>
@@ -178,6 +227,47 @@
         </div>
 
         <div id="status"></div>
+
+        <!-- JSON批量导入功能 -->
+        <div class="result-section">
+            <h3>📥 JSON批量导入</h3>
+            <div class="json-import-section">
+                <h4>导入JSON格式账号数据</h4>
+                <p style="color: #666; margin-bottom: 15px;">
+                    支持单个或多个JSON对象，自动提取 <code>uid</code>、<code>email</code> 和 <code>refreshToken</code> 字段
+                </p>
+
+                <div class="json-example">
+                    <strong>支持的JSON格式示例:</strong><br>
+                    单个对象: <code>{"uid": "...", "email": "...", "refreshToken": "..."}</code><br>
+                    数组格式: <code>[{"uid": "...", "email": "...", "refreshToken": "..."}, ...]</code>
+                </div>
+
+                <div class="form-group">
+                    <label for="jsonInput">JSON数据 (支持单个对象或数组):</label>
+                    <textarea id="jsonInput" placeholder='粘贴JSON数据，例如:
+{
+  "id": 892,
+  "uid": "8nqahpKe8aTtZJStJjHR5Em0qQ92",
+  "email": "579b6481@ddmi888.net",
+  "refreshToken": "AMf-vByUVn2D6MYPihHeGbMCdpaWYZgr_7XsJhLHAkVc..."
+}
+
+或数组格式:
+[
+  {"uid": "...", "email": "...", "refreshToken": "..."},
+  {"uid": "...", "email": "...", "refreshToken": "..."}
+]' style="height: 150px; font-family: monospace; font-size: 12px;"></textarea>
+                </div>
+
+                <div style="text-align: center; margin: 15px 0;">
+                    <button type="button" class="btn btn-success" onclick="parseAndAddJsonAccounts()">📥 解析并添加到表单</button>
+                    <button type="button" class="btn btn-secondary" onclick="clearJsonInput()">🗑️ 清空JSON输入</button>
+                </div>
+
+                <div id="jsonParseStatus"></div>
+            </div>
+        </div>
 
         <div class="result-section">
             <h3>📋 生成结果</h3>
@@ -244,11 +334,107 @@
 
         function clearAll() {
             if (confirm('确定要清空所有账号数据吗？')) {
-                document.querySelectorAll('input, textarea').forEach(input => input.value = '');
+                document.querySelectorAll('input, textarea').forEach(input => {
+                    if (input.id !== 'jsonInput') { // 保留JSON输入框的内容
+                        input.value = '';
+                    }
+                });
                 processedAccounts = [];
                 updateResults();
                 showStatus('已清空所有数据', 'info');
             }
+        }
+
+        function clearJsonInput() {
+            document.getElementById('jsonInput').value = '';
+            document.getElementById('jsonParseStatus').innerHTML = '';
+        }
+
+        function parseAndAddJsonAccounts() {
+            const jsonInput = document.getElementById('jsonInput').value.trim();
+            const statusDiv = document.getElementById('jsonParseStatus');
+
+            if (!jsonInput) {
+                statusDiv.innerHTML = '<div class="status error">请输入JSON数据</div>';
+                return;
+            }
+
+            try {
+                let jsonData;
+
+                // 尝试解析JSON
+                try {
+                    jsonData = JSON.parse(jsonInput);
+                } catch (e) {
+                    throw new Error('JSON格式错误: ' + e.message);
+                }
+
+                // 确保数据是数组格式
+                if (!Array.isArray(jsonData)) {
+                    jsonData = [jsonData];
+                }
+
+                let successCount = 0;
+                let errorCount = 0;
+                const errors = [];
+
+                // 处理每个JSON对象
+                jsonData.forEach((item, index) => {
+                    try {
+                        // 提取必要字段
+                        const uid = item.uid || item.local_id || item.firebase_uid;
+                        const email = item.email;
+                        const refreshToken = item.refreshToken || item.refresh_token;
+
+                        // 验证必要字段
+                        if (!uid || !email || !refreshToken) {
+                            throw new Error(`缺少必要字段 (uid: ${!!uid}, email: ${!!email}, refreshToken: ${!!refreshToken})`);
+                        }
+
+                        // 添加到表单
+                        addAccountFromJson(email, uid, refreshToken);
+                        successCount++;
+
+                    } catch (error) {
+                        errorCount++;
+                        errors.push(`第${index + 1}个对象: ${error.message}`);
+                    }
+                });
+
+                // 显示结果
+                let statusHtml = '';
+                if (successCount > 0) {
+                    statusHtml += `<div class="status success">✅ 成功添加 ${successCount} 个账号到表单</div>`;
+                }
+                if (errorCount > 0) {
+                    statusHtml += `<div class="status error">❌ ${errorCount} 个账号添加失败:<br>${errors.join('<br>')}</div>`;
+                }
+
+                statusDiv.innerHTML = statusHtml;
+
+                if (successCount > 0) {
+                    showStatus(`从JSON成功添加 ${successCount} 个账号到表单`, 'success');
+                }
+
+            } catch (error) {
+                statusDiv.innerHTML = `<div class="status error">❌ 解析失败: ${error.message}</div>`;
+            }
+        }
+
+        function addAccountFromJson(email, uid, refreshToken) {
+            // 添加新的账号表单
+            addAccount();
+
+            // 获取最新添加的表单索引
+            const latestIndex = accountCount - 1;
+
+            // 填充数据
+            document.getElementById(`email_${latestIndex}`).value = email;
+            document.getElementById(`firebase_uid_${latestIndex}`).value = uid;
+            document.getElementById(`refresh_token_${latestIndex}`).value = refreshToken;
+
+            // 更新状态为待处理
+            updateAccountStatus(latestIndex, 'pending', '待处理');
         }
 
         function updateAccountStatus(index, status, message = '') {
