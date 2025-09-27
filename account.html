@@ -187,6 +187,67 @@
             font-size: 11px;
             border-radius: 0 4px 4px 0;
         }
+
+        .import-section {
+            background: linear-gradient(135deg, #e8f5e8 0%, #f0f8f0 100%);
+            border: 2px solid #28a745;
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 15px;
+        }
+
+        .import-section h4 {
+            color: #155724;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .import-section h4:before {
+            content: "🗄️";
+            font-size: 1.2em;
+        }
+
+        #dbPath {
+            border: 2px solid #28a745;
+            border-radius: 4px;
+            padding: 8px 12px;
+            transition: border-color 0.3s ease;
+        }
+
+        #dbPath:focus {
+            border-color: #20c997;
+            box-shadow: 0 0 0 0.2rem rgba(40,167,69,0.25);
+        }
+
+        #importDetails {
+            max-height: 200px;
+            overflow-y: auto;
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 10px;
+            white-space: pre-wrap;
+        }
+
+        #importDetails::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        #importDetails::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 3px;
+        }
+
+        #importDetails::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 3px;
+        }
+
+        #importDetails::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
     </style>
 </head>
 <body>
@@ -288,6 +349,28 @@
                 <button class="btn btn-primary copy-btn" onclick="copyToClipboard('csvCommands')">复制</button>
                 <h4>CSV 创建命令:</h4>
                 <pre id="csvCommands">等待处理账号数据...</pre>
+            </div>
+
+            <div class="result-box import-section">
+                <h4>自动导入到SQLite数据库</h4>
+                <div style="margin-bottom: 15px;">
+                    <label for="dbPath">数据库路径:</label>
+                    <input type="text" id="dbPath" value="account-pool-service/accounts.db"
+                           placeholder="数据库文件路径" style="width: 300px; margin-right: 10px;">
+                    <button class="btn btn-success" onclick="autoImportToDatabase()" id="importBtn">
+                        📥 自动导入数据库
+                    </button>
+                    <button class="btn btn-secondary" onclick="testDatabaseConnection()" id="testDbBtn">
+                        🔍 测试连接
+                    </button>
+                </div>
+                <div id="importStatus"></div>
+                <div id="importProgress" style="display: none;">
+                    <div class="progress">
+                        <div class="progress-bar" id="importProgressBar"></div>
+                    </div>
+                    <div id="importDetails" style="margin-top: 10px; font-family: monospace; font-size: 12px;"></div>
+                </div>
             </div>
         </div>
     </div>
@@ -464,8 +547,11 @@
         }
 
         async function getIdTokenFromRefreshToken(refreshToken) {
-            // 检测是否在本地代理服务器环境中
-            const isLocalProxy = window.location.hostname === 'localhost' && window.location.port === '8021';
+            // 检测是否在代理服务器环境中（支持localhost和服务器IP）
+            const isLocalProxy = window.location.port === '8021' &&
+                                 (window.location.hostname === 'localhost' ||
+                                  window.location.hostname === '127.0.0.1' ||
+                                  window.location.hostname.match(/^\d+\.\d+\.\d+\.\d+$/));
 
             let url, requestOptions;
 
@@ -658,6 +744,137 @@
             }).catch(err => {
                 showStatus('❌ 复制失败: ' + err.message, 'error');
             });
+        }
+
+        async function testDatabaseConnection() {
+            const dbPath = document.getElementById('dbPath').value.trim();
+            const statusDiv = document.getElementById('importStatus');
+            const testBtn = document.getElementById('testDbBtn');
+
+            if (!dbPath) {
+                statusDiv.innerHTML = '<div class="status error">请输入数据库路径</div>';
+                return;
+            }
+
+            testBtn.disabled = true;
+            testBtn.textContent = '测试中...';
+
+            try {
+                const response = await fetch('/api/test-database', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ db_path: dbPath })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    statusDiv.innerHTML = `<div class="status success">✅ 数据库连接成功<br>表结构: ${result.table_info || '未知'}</div>`;
+                } else {
+                    statusDiv.innerHTML = `<div class="status error">❌ 数据库连接失败: ${result.error}</div>`;
+                }
+            } catch (error) {
+                statusDiv.innerHTML = `<div class="status error">❌ 测试失败: ${error.message}</div>`;
+            } finally {
+                testBtn.disabled = false;
+                testBtn.textContent = '🔍 测试连接';
+            }
+        }
+
+        async function autoImportToDatabase() {
+            if (processedAccounts.length === 0) {
+                document.getElementById('importStatus').innerHTML = '<div class="status error">没有可导入的账号数据，请先处理账号</div>';
+                return;
+            }
+
+            const dbPath = document.getElementById('dbPath').value.trim();
+            if (!dbPath) {
+                document.getElementById('importStatus').innerHTML = '<div class="status error">请输入数据库路径</div>';
+                return;
+            }
+
+            const importBtn = document.getElementById('importBtn');
+            const statusDiv = document.getElementById('importStatus');
+            const progressDiv = document.getElementById('importProgress');
+            const progressBar = document.getElementById('importProgressBar');
+            const detailsDiv = document.getElementById('importDetails');
+
+            // 禁用按钮并显示进度
+            importBtn.disabled = true;
+            importBtn.textContent = '导入中...';
+            progressDiv.style.display = 'block';
+            progressBar.style.width = '0%';
+            detailsDiv.innerHTML = '';
+
+            try {
+                statusDiv.innerHTML = '<div class="status info">🚀 开始导入账号到数据库...</div>';
+
+                let successCount = 0;
+                let failedCount = 0;
+                const total = processedAccounts.length;
+
+                // 逐个导入账号
+                for (let i = 0; i < processedAccounts.length; i++) {
+                    const account = processedAccounts[i];
+
+                    try {
+                        // 更新进度
+                        const progress = ((i + 1) / total) * 100;
+                        progressBar.style.width = progress + '%';
+                        detailsDiv.innerHTML += `<div>正在导入: ${account.email}...</div>`;
+
+                        // 发送导入请求
+                        const response = await fetch('/api/import-account', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({
+                                db_path: dbPath,
+                                account: account
+                            })
+                        });
+
+                        const result = await response.json();
+
+                        if (result.success) {
+                            successCount++;
+                            detailsDiv.innerHTML += `<div style="color: green;">✅ ${account.email} 导入成功</div>`;
+                        } else {
+                            failedCount++;
+                            detailsDiv.innerHTML += `<div style="color: red;">❌ ${account.email} 导入失败: ${result.error}</div>`;
+                        }
+
+                        // 滚动到底部
+                        detailsDiv.scrollTop = detailsDiv.scrollHeight;
+
+                        // 添加延迟避免过快请求
+                        await new Promise(resolve => setTimeout(resolve, 500));
+
+                    } catch (error) {
+                        failedCount++;
+                        detailsDiv.innerHTML += `<div style="color: red;">❌ ${account.email} 导入异常: ${error.message}</div>`;
+                    }
+                }
+
+                // 显示最终结果
+                const finalStatus = `
+                    <div class="status ${failedCount === 0 ? 'success' : 'info'}">
+                        🎉 导入完成！<br>
+                        ✅ 成功: ${successCount}/${total}<br>
+                        ${failedCount > 0 ? `❌ 失败: ${failedCount}/${total}` : ''}
+                    </div>
+                `;
+                statusDiv.innerHTML = finalStatus;
+
+            } catch (error) {
+                statusDiv.innerHTML = `<div class="status error">❌ 导入过程发生错误: ${error.message}</div>`;
+            } finally {
+                importBtn.disabled = false;
+                importBtn.textContent = '📥 自动导入数据库';
+            }
         }
 
         // 页面加载完成后的初始化
